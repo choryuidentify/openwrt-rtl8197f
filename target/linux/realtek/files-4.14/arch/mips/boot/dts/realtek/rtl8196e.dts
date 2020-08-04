@@ -1,0 +1,48 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "rtl819x.dtsi"
+
+/ {
+	compatible = "realtek,rtl8196e-generic", "realtek,rtl819x-soc";
+	model = "Realtek RTL8196E Generic Board";
+
+	cpus {
+		cpu@0 {
+			compatible = "realtek,rlx4181";
+		};
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x2000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,38400";
+	};
+};
+
+
+&spi0 {
+	status = "okay";
+
+	m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <12000000>;
+
+		partition@0 {
+			label = "bootloader";
+			reg = <0x0 0x20000>;
+			read-only;
+		};
+
+		partition@20000 {
+			label = "firmware";
+			reg = <0x20000 0x3E0000>;
+		};
+	};
+};

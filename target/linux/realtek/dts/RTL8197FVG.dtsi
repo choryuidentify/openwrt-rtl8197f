@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "RTL8197F.dtsi"
+
+&serial0 {
+	compatible = "ns16550a";
+	reg = <0x18147000 0x100>;
+
+	interrupt-parent = <&intc>;
+	interrupts = <9>;
+
+	reg-io-width = <4>;
+	reg-shift = <2>;
+	clock-frequency = <100000000>;
+};
+

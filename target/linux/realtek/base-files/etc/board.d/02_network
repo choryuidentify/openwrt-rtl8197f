@@ -1,0 +1,53 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/functions/uci-defaults.sh
+. /lib/functions/system.sh
+
+board_config_update
+board=$(cat /tmp/sysinfo/board_name)
+
+ucidef_set_interfaces_lan_wan "eth0" "eth1"
+
+lan_mac=""
+wan_mac=""
+
+case $board in
+  dir-815-d1)
+    offset=$(strings -t x "$(find_mtd_part boot)" | grep llconfig | head -n 1 | awk '{ print "0x"$1 }')
+    offset=$((offset+53))
+    wan_mac=$(mtd_get_mac_binary boot $offset)
+    lan_mac=$(macaddr_add "$wan_mac" 1)
+    ;;
+  re708-v1)
+    wan_mac=$(mtd_get_mac_binary boot 131079)
+    lan_mac=$(macaddr_add "$wan_mac" 1)
+    ;;
+  gwr1200ac-v1)
+    wan_mac=$(mtd_get_mac_binary boot 131091)
+    lan_mac=$(macaddr_add "$wan_mac" 1)
+    ;;
+  gwr1200ac-v2)
+    wan_mac=$(mtd_get_mac_binary boot 131091)
+    lan_mac=$(macaddr_add "$wan_mac" 1)
+    ;;
+  actionrg1200-v1 | \
+  actionrf1200-v1)
+    wan_mac=$(mtd_get_mac_ascii boot HW_NIC0_ADDR)
+    lan_mac=$(macaddr_add "$wan_mac" 1)
+    ;;
+  gwr-300n-v1)
+    wan_mac=$(mtd_get_mac_binary boot 24595)
+    lan_mac=$(mtd_get_mac_binary boot 24583)
+    ;;
+  re172-v1)
+    wan_mac=$(mtd_get_mac_binary boot 24583)
+    lan_mac=$(mtd_get_mac_binary boot 24595)
+esac
+
+[ -n "$lan_mac" ] && ucidef_set_interface_macaddr "lan" $lan_mac
+[ -n "$wan_mac" ] && ucidef_set_interface_macaddr "wan" $wan_mac
+
+board_config_flush
+
+exit 0

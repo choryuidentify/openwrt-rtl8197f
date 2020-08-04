@@ -1,0 +1,47 @@
+#!/bin/sh
+
+. /lib/functions.sh
+. /lib/functions/system.sh
+
+fix_header() {
+	mtdblock_path=$(find_mtd_part firmware)
+	mtdblockroot_path=$(find_mtd_part rootfs)
+	mtdblockfs_path=$(find_mtd_part rootfs_data)
+	mtdblockroot_size=$(mtd_get_part_size rootfs)
+	mtdblockfs_size=$(mtd_get_part_size rootfs_data)
+	mtdblockfsdiff_size=$((mtdblockroot_size-mtdblockfs_size))
+
+	imgsize_after_format=$(dd if=$mtdblockroot_path bs=1 skip=$((mtdblockfsdiff_size-16)) count=4 2> /dev/null | \
+	                       hexdump -C | awk 'NR==1 {printf $2$3$4$5}')
+
+	imutable_hex=$(dd if=$mtdblock_path bs=1 count=12 2> /dev/null | \
+	               hexdump -C | awk 'NR==1 {printf $2$3$4$5$6$7$8$9$10$11$12$13}')
+
+	size_discounted_hex=
+	imutable_hex_concat=
+
+	for i in `seq 0 2 6`
+	do
+		draw="${imgsize_after_format:i:2}"
+		size_discounted_hex=$size_discounted_hex'\x'$draw
+	done
+
+	for i in `seq 0 2 22`
+	do
+		dimun="${imutable_hex:i:2}"
+		imutable_hex_concat=$imutable_hex_concat'\x'$dimun
+	done
+
+	printf $imutable_hex_concat$size_discounted_hex > /tmp/newcvimgheader.bin
+	dd if=/tmp/newcvimgheader.bin bs=1 count=16 of=$mtdblock_path 2> /dev/null
+	rm /tmp/newcvimgheader.bin
+}
+
+board=$(board_name)
+
+case "$board" in
+actionrg1200-v1 | \
+actionrf1200-v1)
+	fix_header
+	;;
+esac

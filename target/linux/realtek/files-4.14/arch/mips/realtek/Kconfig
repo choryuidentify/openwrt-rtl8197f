@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: GPL-2.0
+if REALTEK
+
+choice
+	prompt "Realtek SoC selection"
+	default SOC_RTL8197D
+	help
+	  Select Realtek SoC type.
+
+	config SOC_RTL8196E
+		bool "RTL8196E"
+		select USE_GENERIC_EARLY_PRINTK_8250
+		select SYS_SUPPORTS_BIG_ENDIAN
+		select SYS_HAS_CPU_RLX4181
+		select HW_HAS_PCI
+		select GPIOLIB
+		select GPIO_GENERIC
+		select GPIOLIB_IRQCHIP
+
+	config SOC_RTL8197D
+		bool "RTL8197D"
+		select USE_GENERIC_EARLY_PRINTK_8250
+		select SYS_SUPPORTS_BIG_ENDIAN
+		select SYS_HAS_CPU_RLX5281
+		select HW_HAS_PCI
+		select GPIOLIB
+		select GPIO_GENERIC
+		select GPIOLIB_IRQCHIP
+
+	config SOC_RTL8197F
+		bool "RTL8197F"
+		select SYS_SUPPORTS_LITTLE_ENDIAN
+		select SYS_HAS_CPU_MIPS32_R1
+		select SYS_HAS_CPU_MIPS32_R2
+		select HW_HAS_PCI
+		select GPIOLIB
+		select GPIO_GENERIC
+		select GPIOLIB_IRQCHIP
+		select CEVT_R4K
+		select CSRC_R4K
+
+endchoice
+
+choice
+	prompt "Devicetree selection"
+	default DTB_RTK_NONE
+	help
+	  Select the devicetree.
+
+	config DTB_RTK_NONE
+		bool "None"
+
+	config DTB_RTL8196E_GEN
+		bool "RTL8196E generic"
+		depends on SOC_RTL8196E
+		select BUILTIN_DTB
+
+	config DTB_RTL8197D_GEN
+		bool "RTL8197D generic"
+		depends on SOC_RTL8197D
+		select BUILTIN_DTB
+
+	config DTB_RTL8197F_GEN
+		bool "RTL8197F generic"
+		depends on SOC_RTL8197F
+		select BUILTIN_DTB
+
+endchoice
+
+endif

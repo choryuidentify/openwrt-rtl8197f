@@ -1,0 +1,10 @@
+--- a/arch/mips/pci/Makefile
++++ b/arch/mips/pci/Makefile
+@@ -49,6 +49,7 @@
+ obj-$(CONFIG_SOC_MT7620)	+= pci-mt7620.o
+ obj-$(CONFIG_SOC_RT288X)	+= pci-rt2880.o
+ obj-$(CONFIG_SOC_RT3883)	+= pci-rt3883.o
++obj-$(CONFIG_REALTEK)		+= pci-realtek.o
+ obj-$(CONFIG_TANBAC_TB0219)	+= fixup-tb0219.o
+ obj-$(CONFIG_TANBAC_TB0226)	+= fixup-tb0226.o
+ obj-$(CONFIG_TANBAC_TB0287)	+= fixup-tb0287.o

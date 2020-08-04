@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "RTL819X.dtsi"
+
+/ {
+	compatible = "D-Link,dir-822-c1", "realtek,rtl819x-soc";
+	model = "D-Link DIR-822 C1";
+
+	cpus {
+		cpu@0 {
+			compatible = "realtek,rlx5281";
+		};
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x4000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,38400";
+	};
+
+};

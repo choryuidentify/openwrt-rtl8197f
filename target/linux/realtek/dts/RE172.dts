@@ -1,0 +1,52 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "RTL819X.dtsi"
+
+/ {
+	compatible = "multilaser,re172", "realtek,rtl819x-soc";
+	model = "Multilaser RE172 V1";
+
+	cpus {
+		cpu@0 {
+			compatible = "realtek,rlx4181";
+		};
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x2000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,38400";
+	};
+};
+
+
+&spi0 {
+	status = "okay";
+
+	m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <12000000>;
+
+		partition@0 {
+			label = "boot";
+			reg = <0x0 0x10000>;
+			read-only;
+		};
+
+		partition@10000 {
+			label = "firmware";
+			reg = <0x10000 0x3F0000>;
+		};
+	};
+};
+
+&pcie0 {
+	status = "okay";
+};

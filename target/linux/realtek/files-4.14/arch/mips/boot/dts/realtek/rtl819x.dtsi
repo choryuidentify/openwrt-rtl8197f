@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: GPL-2.0
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "realtek,rtl819x-soc";
+
+	cpuintc: cpuintc {
+		#address-cells = <0>;
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		compatible = "mti,cpu-interrupt-controller";
+	};
+
+	refclk: refclk {
+		/* 25Mhz default clock */
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <25000000>;
+	};
+
+	soc {
+		compatible = "simple-bus";
+		ranges = <0x0 0x18000000 0x10000>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		sysc: system-controller@0 {
+			compatible = "realtek,rtl819x-sysc";
+			reg = <0x0 0x1000>;
+		};
+
+		memc: memory-controller@1000 {
+			compatible = "realtek,rtl819x-memc";
+			reg = <0x1000 0x100>;
+		};		
+
+		uartlite: serial@2000 {
+			compatible = "realtek,rtl819x-uart", "ns16550a";
+			reg = <0x2000 0x20>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <12>;
+
+			reg-shift = <2>;
+			clock-frequency = <200000000>;
+		};
+
+		intc: intc@3000 {
+			compatible = "realtek,rtl819x-intc";
+			reg = <0x3000 0x100>;
+
+			interrupt-controller;
+			#interrupt-cells = <1>;
+
+			interrupt-parent = <&cpuintc>;
+			interrupts = <2>;
+		};
+
+		timer: timer-controller@3100 {
+			compatible = "realtek,rtl819x-timer";
+			reg = <0x3100 0x20>;
+
+			interrupt-parent = <&cpuintc>;
+			interrupts = <7>;
+
+			clocks = <&refclk>;
+		};
+
+		spi0: spi@1200 {
+			compatible = "realtek,rtl819x-spi";
+			reg = <0x1200 0x10>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			status = "disabled";
+		};
+
+	};
+};

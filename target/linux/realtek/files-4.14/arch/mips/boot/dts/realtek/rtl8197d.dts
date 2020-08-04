@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+/include/ "rtl819x.dtsi"
+
+/ {
+	compatible = "realtek,rtl8197d-generic", "realtek,rtl819x-soc";
+	model = "Realtek RTL8197D Generic Board";
+
+	cpus {
+		cpu@0 {
+			compatible = "realtek,rlx5281";
+		};
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x4000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
+	};
+
+};

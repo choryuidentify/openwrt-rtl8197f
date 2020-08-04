@@ -1,0 +1,141 @@
+// SPDX-License-Identifier: GPL-2.0
+/ {
+	#address-cells = <1>;
+	#size-cells = <1>;
+	compatible = "realtek,rtl819x-soc";
+
+	cpuintc: cpuintc {
+		#address-cells = <0>;
+		#interrupt-cells = <1>;
+		interrupt-controller;
+		compatible = "mti,cpu-interrupt-controller";
+	};
+
+	refclk: refclk {
+		/* 25Mhz default clock */
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <25000000>;
+	};
+
+	clk40: clk40 {
+		/* 40Mhz alternative clock */
+		#clock-cells = <0>;
+		compatible = "fixed-clock";
+		clock-frequency = <40000000>;
+	};
+
+	soc {
+		compatible = "simple-bus";
+		ranges = <0x0 0x18000000 0x10000>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		sysc: system-controller@0 {
+			compatible = "realtek,rtl819x-sysc";
+			reg = <0x0 0x1000>;
+		};
+
+		memc: memory-controller@1000 {
+			compatible = "realtek,rtl819x-memc";
+			reg = <0x1000 0x100>;
+		};		
+
+		uartlite: serial@2000 {
+			compatible = "realtek,rtl819x-uart", "ns16550a";
+			reg = <0x2000 0x20>;
+
+			interrupt-parent = <&intc>;
+			interrupts = <12>;
+
+			reg-shift = <2>;
+			clock-frequency = <200000000>;
+		};
+
+		intc: intc@3000 {
+			compatible = "realtek,rtl819x-intc";
+			reg = <0x3000 0x100>;
+
+			interrupt-controller;
+			#interrupt-cells = <1>;
+
+			interrupt-parent = <&cpuintc>;
+			interrupts = <2>;
+		};
+
+		timer: timer-controller@3100 {
+			compatible = "realtek,rtl819x-timer";
+			reg = <0x3100 0x20>;
+
+			interrupt-parent = <&cpuintc>;
+			interrupts = <7>;
+
+			clocks = <&refclk>;
+		};
+
+		gpio0: gpio-controller@3500 {
+			compatible = "realtek,realtek-gpio";
+			reg = <0x3500 0x1c>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			status = "disabled";
+		};
+
+		gpio1: gpio-controller@351C {
+			compatible = "realtek,realtek-gpio";
+			reg = <0x351C 0x1c>;
+			gpio-controller;
+			#gpio-cells = <2>;
+			status = "disabled";
+		};
+
+		spi0: spi@1200 {
+			compatible = "realtek,rtl819x-spi";
+			reg = <0x1200 0x10>;
+
+			#address-cells = <1>;
+			#size-cells = <0>;
+
+			status = "disabled";
+		};
+	};
+
+	pcie0: pcie-controller@18b00000 {
+		compatible = "realtek,rtl8196b-pci";
+		#address-cells = <3>;
+		#size-cells = <2>;
+		bus-range = <0 255>;
+		reg = 	<0x18b00000 0x1000>,  /* RC CFG */
+				<0x18b01000 0x1000>,  /* RC CFG EXT */
+				<0x18b10000 0x1000>,  /* DEV CFG0 (EP) */
+				<0x18b11000 0x1000>;  /* DEV CFG1 (EP) */
+		reg-names = "rc_cfg_base", "rc_ext_base", "dev_cfg0_base", "dev_cfg1_base";
+		ranges = 	<0x02000000 0 0x00000000 0x19000000 0 0x01000000	/* pci memory */
+					 0x01000000 0 0x00000000 0x18c00000 0 0x00200000>;	/* io space */
+		interrupt-parent = <&cpuintc>;
+		interrupts = <5>;
+		clocks = <&refclk>;
+
+		status = "disabled";
+	};
+
+	pcie1: pcie-controller@18b20000 {
+		compatible = "realtek,rtl8196b-pci";
+		#address-cells = <3>;
+		#size-cells = <2>;
+		bus-range = <0 255>;
+		reg = 	<0x18b20000 0x1000>,  /* RC CFG */
+				<0x18b21000 0x1000>,  /* RC CFG EXT */
+				<0x18b30000 0x1000>,  /* DEV CFG0 (EP) */
+				<0x18b31000 0x1000>;  /* DEV CFG1 (EP) */
+		reg-names = "rc_cfg_base", "rc_ext_base", "dev_cfg0_base", "dev_cfg1_base";
+		ranges = 	<0x02000000 0 0x00000000 0x1a000000 0 0x01000000	/* pci memory */
+					 0x01000000 0 0x00000000 0x18e00000 0 0x00200000>;	/* io space */
+		interrupt-parent = <&cpuintc>;
+		interrupts = <6>;
+		clocks = <&refclk>;
+
+		status = "disabled";
+	};
+};
