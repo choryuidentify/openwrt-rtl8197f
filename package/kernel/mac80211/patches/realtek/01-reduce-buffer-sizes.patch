@@ -1,0 +1,19 @@
+--- a/drivers/net/wireless/realtek/rtlwifi/pci.h
++++ b/drivers/net/wireless/realtek/rtlwifi/pci.h
+@@ -34,13 +34,13 @@
+ #define RTL_PCI_RX_CMD_QUEUE			1
+ #define RTL_PCI_MAX_RX_QUEUE			2
+ 
+-#define RTL_PCI_MAX_RX_COUNT			512/*64*/
++#define RTL_PCI_MAX_RX_COUNT			64	 /*512/64*/
+ #define RTL_PCI_MAX_TX_QUEUE_COUNT		9
+ 
+ #define RT_TXDESC_NUM				128
+-#define TX_DESC_NUM_92E				512
++#define TX_DESC_NUM_92E				64
+ #define TX_DESC_NUM_8822B			512
+-#define RT_TXDESC_NUM_BE_QUEUE			256
++#define RT_TXDESC_NUM_BE_QUEUE			64
+ 
+ #define BK_QUEUE				0
+ #define BE_QUEUE				1
