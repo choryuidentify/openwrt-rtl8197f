@@ -1,0 +1,233 @@
+--- a/arch/mips/atomic_arch.h
++++ b/arch/mips/atomic_arch.h
+@@ -8,7 +8,7 @@
+ static inline int a_ll(volatile int *p)
+ {
+ 	int v;
+-#if __mips < 2
++#if __mips < 2 && !(defined(__mlx4380) || defined(__mlx5380))
+ 	__asm__ __volatile__ (
+ 		".set push ; .set mips2\n\t"
+ 		"ll %0, %1"
+@@ -26,7 +26,7 @@
+ static inline int a_sc(volatile int *p, int v)
+ {
+ 	int r;
+-#if __mips < 2
++#if __mips < 2 && !(defined(__mlx4380) || defined(__mlx5380))
+ 	__asm__ __volatile__ (
+ 		".set push ; .set mips2\n\t"
+ 		"sc %0, %1"
+@@ -43,7 +43,13 @@
+ #define a_barrier a_barrier
+ static inline void a_barrier()
+ {
+-#if __mips < 2
++#if defined(__mlx4380)
++	__asm__ __volatile__ (
++		".set push ; .set mips2 ; sync ; .set pop"
++		: : : "memory");
++#elif defined(__mlx5380)
++	__asm__ __volatile__ ("sync" : : : "memory");
++#elif __mips < 2
+ 	/* mips2 sync, but using too many directives causes
+ 	 * gcc not to inline it, so encode with .long instead. */
+ 	__asm__ __volatile__ (".long 0xf" : : : "memory");
+--- a/arch/mips/crt_arch.h
++++ b/arch/mips/crt_arch.h
+@@ -16,11 +16,19 @@
+ ".hidden _DYNAMIC \n"
+ "	.gpword _DYNAMIC \n"
+ "1:	lw $gp, 0($ra) \n"
++#if defined(__mlx4380)
++"	move $4, $sp \n"
++"	subu $gp, $ra, $gp \n"
++"	lw $5, 8($ra) \n"
++"	lw $25, 4($ra) \n"
++"	addu $5, $5, $gp \n"
++#else
+ "	subu $gp, $ra, $gp \n"
+ "	move $4, $sp \n"
+ "	lw $5, 8($ra) \n"
+ "	addu $5, $5, $gp \n"
+ "	lw $25, 4($ra) \n"
++#endif
+ "	addu $25, $25, $gp \n"
+ "	and $sp, $sp, -8 \n"
+ "	jalr $25 \n"
+--- a/arch/mips/pthread_arch.h
++++ b/arch/mips/pthread_arch.h
+@@ -1,6 +1,9 @@
+ static inline struct pthread *__pthread_self()
+ {
+-#if __mips_isa_rev < 2
++#if defined(__mlx5380)
++	char *tp;
++	__asm__ ("mflxc0 %0, $8" : "=r" (tp) );	
++#elif __mips_isa_rev < 2
+ 	register char *tp __asm__("$3");
+ 	__asm__ (".word 0x7c03e83b" : "=r" (tp) );
+ #else
+--- a/arch/mips/reloc.h
++++ b/arch/mips/reloc.h
+@@ -36,6 +36,7 @@
+ #define CRTJMP(pc,sp) __asm__ __volatile__( \
+ 	"move $sp,%1 ; jr %0" : : "r"(pc), "r"(sp) : "memory" )
+ 
++#ifndef __mlx4380
+ #define GETFUNCSYM(fp, sym, got) __asm__ ( \
+ 	".hidden " #sym "\n" \
+ 	".set push \n" \
+@@ -50,3 +51,21 @@
+ 	"	addu %0, %0, $ra \n" \
+ 	".set pop \n" \
+ 	: "=r"(*(fp)) : : "memory", "ra" )
++#else
++#define GETFUNCSYM(fp, sym, got) __asm__ ( \
++	".hidden " #sym "\n" \
++	".set push \n" \
++	".set noreorder \n" \
++	"	bal 1f \n" \
++	"	 nop \n" \
++	"	.gpword . \n" \
++	"	.gpword " #sym " \n" \
++	"1:	lw %0, ($ra) \n" \
++	"	nop \n" \
++	"	subu %0, $ra, %0 \n" \
++	"	lw $ra, 4($ra) \n" \
++	"	nop \n" \
++	"	addu %0, %0, $ra \n" \
++	".set pop \n" \
++	: "=r"(*(fp)) : : "memory", "ra" )
++#endif 
+--- a/arch/mips/syscall_arch.h
++++ b/arch/mips/syscall_arch.h
+@@ -141,9 +141,11 @@
+ 	return r7 ? -r2 : r2;
+ }
+ 
++#ifndef __mlx4380
+ #define VDSO_USEFUL
+ #define VDSO_CGT_SYM "__vdso_clock_gettime"
+ #define VDSO_CGT_VER "LINUX_2.6"
++#endif
+ 
+ #define SO_SNDTIMEO_OLD 0x1005
+ #define SO_RCVTIMEO_OLD 0x1006
+--- a/crt/mips/crtn.s
++++ b/crt/mips/crtn.s
+@@ -3,11 +3,23 @@
+ .section .init
+ 	lw $gp,24($sp)
+ 	lw $ra,28($sp)
++#if defined(__mlx4380)
++	addu $sp,$sp,32
++	j $ra
++	nop
++#else
+ 	j $ra
+ 	addu $sp,$sp,32
++#endif
+ 
+ .section .fini
+ 	lw $gp,24($sp)
+ 	lw $ra,28($sp)
++#if defined(__mlx4380)
++	addu $sp,$sp,32
++	j $ra
++	nop
++#else
+ 	j $ra
+ 	addu $sp,$sp,32
++#endif
+--- a/src/ldso/mips/dlsym.s
++++ b/src/ldso/mips/dlsym.s
+@@ -13,5 +13,8 @@
+ 	jalr $25
+ 	nop
+ 	lw $ra, 12($sp)
++#if defined(__mlx4380)
++	nop
++#endif
+ 	jr $ra
+ 	addiu $sp, $sp, 16
+--- a/src/setjmp/mips/longjmp.S
++++ b/src/setjmp/mips/longjmp.S
+@@ -30,5 +30,11 @@
+ 	lw      $22, 32($4)
+ 	lw      $23, 36($4)
+ 	lw      $30, 40($4)
++#if defined(__mlx4380)
++	lw      $28, 44($4)
++	jr      $ra
++	nop
++#else
+ 	jr      $ra
+ 	lw      $28, 44($4)
++#endif
+--- a/src/signal/mips/sigsetjmp.s
++++ b/src/signal/mips/sigsetjmp.s
+@@ -15,6 +15,9 @@
+ 	sw $16, 104+4+16($4)
+ 
+ 	lw $25, %call16(setjmp)($gp)
++#if defined(__mlx4380)
++	nop
++#endif
+ 	jalr $25
+ 	 move $16, $4
+ 
+@@ -25,9 +28,15 @@
+ 
+ .hidden __sigsetjmp_tail
+ 	lw $25, %call16(__sigsetjmp_tail)($gp)
++#if defined(__mlx4380)
++	nop
++#endif
+ 	jr $25
+ 	 nop
+ 
+ 1:	lw $25, %call16(setjmp)($gp)
++#if defined(__mlx4380)
++	nop
++#endif
+ 	jr $25
+ 	 nop
+--- a/src/thread/mips/syscall_cp.s
++++ b/src/thread/mips/syscall_cp.s
+@@ -17,6 +17,9 @@
+ 	subu    $sp, $sp, 32
+ __cp_begin:
+ 	lw      $4, 0($4)
++#if defined(__mlx4380)
++	nop
++#endif
+ 	bne     $4, $0, __cp_cancel
+ 	move    $2, $5
+ 	move    $4, $6
+@@ -46,8 +49,13 @@
+ 	.gpword .
+ 	.gpword __cancel
+ 1:	lw      $3, ($ra)
++#if defined(__mlx4380)
++	lw      $25, 4($ra)
++	subu    $3, $ra, $3
++#else
+ 	subu    $3, $ra, $3
+ 	lw      $25, 4($ra)
++#endif
+ 	addu    $25, $25, $3
+ 	jr      $25
+ 	move    $ra, $2
+--- a/src/unistd/mips/pipe.s
++++ b/src/unistd/mips/pipe.s
+@@ -11,6 +11,9 @@
+ 	beq $7, $0, 1f
+ 	nop
+ 	lw $25, %call16(__syscall_ret)($gp)
++#if defined(__mlx4380)
++	nop
++#endif
+ 	jr $25
+ 	subu $4, $0, $2
+ 1:	sw $2, 0($4)

@@ -1,0 +1,202 @@
+--- a/gcc/config/mips/mips-cpus.def	2017-01-01 10:07:43.905435000 -0200
++++ b/gcc/config/mips/mips-cpus.def	2019-06-28 11:37:27.632872839 -0300
+@@ -171,3 +171,8 @@
+ 
+ /* MIPS64 Release 6 processors.  */
+ MIPS_CPU ("i6400", PROCESSOR_I6400, 69, 0)
++
++/* Lexra processors */
++MIPS_CPU ("lx4380", PROCESSOR_LX4380, 1, 0)
++MIPS_CPU ("lx5280", PROCESSOR_LX5280, 1, 0)
++MIPS_CPU ("lx5380", PROCESSOR_LX5380, 1, 0)
+--- a/gcc/config/mips/mips-tables.opt	2017-01-01 10:07:43.905435000 -0200
++++ b/gcc/config/mips/mips-tables.opt	2019-06-28 11:53:08.281445803 -0300
+@@ -696,3 +696,12 @@
+ EnumValue
+ Enum(mips_arch_opt_value) String(i6400) Value(102) Canonical
+ 
++EnumValue
++Enum(mips_arch_opt_value) String(lx4380) Value(103) Canonical
++
++EnumValue
++Enum(mips_arch_opt_value) String(lx5280) Value(104) Canonical
++
++EnumValue
++Enum(mips_arch_opt_value) String(lx5380) Value(105) Canonical
++
+--- a/gcc/config/mips/mips.c	2019-06-21 15:50:27.070510816 -0300
++++ b/gcc/config/mips/mips.c	2019-06-21 11:56:30.260810586 -0300
+@@ -19669,6 +19669,10 @@
+   if (mips_arch_info == 0)
+     mips_set_architecture (mips_default_arch ());
+ 
++  /* flag_fix_bdsl only works for Taroko processors */
++  if (flag_fix_bdsl && !TARGET_LEXRA)
++    flag_fix_bdsl = false;
++
+   if (ABI_NEEDS_64BIT_REGS && !ISA_HAS_64BIT_REGS)
+     error ("%<-march=%s%> is not compatible with the selected ABI",
+ 	   mips_arch_info->name);
+--- a/gcc/config/mips/mips.h	2017-01-19 23:05:25.742100000 -0200
++++ b/gcc/config/mips/mips.h	2019-06-28 11:49:15.064453334 -0300
+@@ -287,6 +287,12 @@
+ #define TARGET_SR71K                (mips_arch == PROCESSOR_SR71000)
+ #define TARGET_XLP                  (mips_arch == PROCESSOR_XLP)
+ 
++#define TARGET_LX5380    (mips_arch == PROCESSOR_LX5380)
++#define TARGET_LX5280    (mips_arch == PROCESSOR_LX5280)
++#define TARGET_LX4380    (mips_arch == PROCESSOR_LX4380)
++#define TARGET_LEXRA     (mips_arch == PROCESSOR_LX4380 \
++              || mips_arch == PROCESSOR_LX5280 || TARGET_LX5380)
++
+ /* Scheduling target defines.  */
+ #define TUNE_20KC		    (mips_tune == PROCESSOR_20KC)
+ #define TUNE_24K		    (mips_tune == PROCESSOR_24KC	\
+@@ -299,7 +303,7 @@
+ #define TUNE_LOONGSON_2EF           (mips_tune == PROCESSOR_LOONGSON_2E	\
+ 				     || mips_tune == PROCESSOR_LOONGSON_2F)
+ #define TUNE_LOONGSON_3A            (mips_tune == PROCESSOR_LOONGSON_3A)
+-#define TUNE_MIPS3000               (mips_tune == PROCESSOR_R3000)
++#define TUNE_MIPS3000               (mips_tune == PROCESSOR_R3000 || TARGET_LEXRA)
+ #define TUNE_MIPS3900               (mips_tune == PROCESSOR_R3900)
+ #define TUNE_MIPS4000               (mips_tune == PROCESSOR_R4000)
+ #define TUNE_MIPS4120               (mips_tune == PROCESSOR_R4120)
+@@ -641,6 +645,14 @@
+ 	builtin_define ("__mips_no_lxc1_sxc1");				\
+       if (!ISA_HAS_UNFUSED_MADD4 && !ISA_HAS_FUSED_MADD4)		\
+ 	builtin_define ("__mips_no_madd4");				\
++      if (TARGET_LEXRA)              \
++  builtin_define ("__mlexra");          \
++      if (TARGET_LX4380)              \
++  builtin_define ("__mlx4380");          \
++      if (TARGET_LX5380)              \
++  builtin_define ("__mlx5380");          \
++      if (flag_fix_bdsl)           \
++  builtin_define ("__FIX_BDSL__");        \
+     }									\
+   while (0)
+ 
+@@ -799,6 +807,7 @@
+   "%{mhard-float|msoft-float|mno-float|march=mips*:; \
+      march=vr41*|march=m4k|march=4k*|march=24kc|march=24kec \
+      |march=34kc|march=34kn|march=74kc|march=1004kc|march=5kc \
++     |march=lx* \
+      |march=m14k*|march=m5101|march=octeon|march=xlr: -msoft-float; \
+      march=*: -mhard-float}"
+ 
+@@ -1011,7 +1020,8 @@
+    ST Loongson 2E/2F.  */
+ #define ISA_HAS_CONDMOVE        (ISA_HAS_FP_CONDMOVE			\
+ 				 || TARGET_MIPS5900			\
+-				 || TARGET_LOONGSON_2EF)
++				 || TARGET_LOONGSON_2EF \
++         || (!TARGET_MIPS16 && TARGET_LEXRA))
+ 
+ /* ISA has LDC1 and SDC1.  */
+ #define ISA_HAS_LDC1_SDC1	(!ISA_MIPS1				\
+@@ -1255,7 +1265,7 @@
+ #define ISA_HAS_SYNCI (mips_isa_rev >= 2 && !TARGET_MIPS16)
+ 
+ /* ISA includes sync.  */
+-#define ISA_HAS_SYNC ((mips_isa >= 2 || TARGET_MIPS3900) && !TARGET_MIPS16)
++#define ISA_HAS_SYNC ((mips_isa >= 2 || TARGET_MIPS3900 || TARGET_LX5380) && !TARGET_MIPS16)
+ #define GENERATE_SYNC			\
+   (target_flags_explicit & MASK_LLSC	\
+    ? TARGET_LLSC && !TARGET_MIPS16	\
+@@ -1264,7 +1274,7 @@
+ /* ISA includes ll and sc.  Note that this implies ISA_HAS_SYNC
+    because the expanders use both ISA_HAS_SYNC and ISA_HAS_LL_SC
+    instructions.  */
+-#define ISA_HAS_LL_SC (mips_isa >= 2 && !TARGET_MIPS5900 && !TARGET_MIPS16)
++#define ISA_HAS_LL_SC ((mips_isa >= 2 || TARGET_LX5380) && !TARGET_MIPS5900 && !TARGET_MIPS16)
+ #define GENERATE_LL_SC			\
+   (target_flags_explicit & MASK_LLSC	\
+    ? TARGET_LLSC && !TARGET_MIPS16	\
+@@ -1396,6 +1406,9 @@
+ 
+ #undef CC1_SPEC
+ #define CC1_SPEC "\
++%{mlx4380:-march=lx4380}  \
++%{mlx5280:-march=lx5280}  \
++%{mlx5380:-march=lx5380}  \
+ %{G*} %{EB:-meb} %{EL:-mel} %{EB:%{EL:%emay not use both -EB and -EL}} \
+ %(subtarget_cc1_spec)"
+ 
+--- a/gcc/config/mips/mips.md	2017-04-19 01:52:54.447911000 -0300
++++ b/gcc/config/mips/mips.md	2019-06-28 11:52:19.537373476 -0300
+@@ -69,6 +69,9 @@
+   p5600
+   m5100
+   i6400
++  lx4380
++  lx5280
++  lx5380
+ ])
+ 
+ (define_c_enum "unspec" [
+@@ -757,9 +760,13 @@
+ 
+ ;; Can the instruction be put into a delay slot?
+ (define_attr "can_delay" "no,yes"
+-  (if_then_else (and (eq_attr "type" "!branch,call,jump")
+-		     (eq_attr "hazard" "none")
+-		     (match_test "get_attr_insn_count (insn) == 1"))
++  (if_then_else (and (ior (eq (symbol_ref "TARGET_MIPS16") (const_int 0))
++       (eq (symbol_ref "flag_fix_bdsl") (const_int 0)))
++        (ior (eq_attr "type" "!load")
++       (eq (symbol_ref "flag_fix_bdsl") (const_int 0)))
++        (and (eq_attr "type" "!branch,call,jump")
++       (eq_attr "hazard" "none")
++       (match_test "get_attr_insn_count (insn) == 1")))
+ 		(const_string "yes")
+ 		(const_string "no")))
+ 
+@@ -4339,7 +4346,7 @@
+ 	(unspec:GPR [(match_operand:BLK 1 "memory_operand" "m")
+ 		     (match_operand:QI 2 "memory_operand" "ZC")]
+ 		    UNSPEC_LOAD_LEFT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
++  "!TARGET_MIPS16 && !TARGET_LX5280 && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
+   "<load>l\t%0,%2"
+   [(set_attr "move_type" "load")
+    (set_attr "mode" "<MODE>")])
+@@ -4350,7 +4357,7 @@
+ 		     (match_operand:QI 2 "memory_operand" "ZC")
+ 		     (match_operand:GPR 3 "register_operand" "0")]
+ 		    UNSPEC_LOAD_RIGHT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
++  "!TARGET_MIPS16 && !TARGET_LX5280 && mips_mem_fits_mode_p (<MODE>mode, operands[1])"
+   "<load>r\t%0,%2"
+   [(set_attr "move_type" "load")
+    (set_attr "mode" "<MODE>")])
+@@ -4360,7 +4367,7 @@
+ 	(unspec:BLK [(match_operand:GPR 1 "reg_or_0_operand" "dJ")
+ 		     (match_operand:QI 2 "memory_operand" "ZC")]
+ 		    UNSPEC_STORE_LEFT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
++  "!TARGET_MIPS16 && !TARGET_LX5280 && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
+   "<store>l\t%z1,%2"
+   [(set_attr "move_type" "store")
+    (set_attr "mode" "<MODE>")])
+@@ -4371,7 +4378,7 @@
+ 		     (match_operand:QI 2 "memory_operand" "ZC")
+ 		     (match_dup 0)]
+ 		    UNSPEC_STORE_RIGHT))]
+-  "!TARGET_MIPS16 && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
++  "!TARGET_MIPS16 && !TARGET_LX5280 && mips_mem_fits_mode_p (<MODE>mode, operands[0])"
+   "<store>r\t%z1,%2"
+   [(set_attr "move_type" "store")
+    (set_attr "mode" "<MODE>")])
+--- a/gcc/config/mips/mips.opt	2017-04-10 10:44:39.662699000 -0300
++++ b/gcc/config/mips/mips.opt	2019-06-21 14:43:00.817410739 -0300
+@@ -315,6 +315,10 @@
+ Target Report Var(TARGET_MCU)
+ Use MCU instructions.
+ 
++mno-bdsl
++Target Report Var(flag_fix_bdsl) Init(0)
++Forbid the use of load instructions in the branch delay slots for all cases
++
+ mno-flush-func
+ Target RejectNegative
+ Do not use a cache-flushing function before calling stack trampolines.
