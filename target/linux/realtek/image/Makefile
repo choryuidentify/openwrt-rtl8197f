@@ -236,6 +236,24 @@ define Device/ACTIONRF1200
   IMAGE/sysupgrade.bin = append-kernel | pad-offset 64k 16 | append-rootfs | pad-rootfs -x 16 | cvimg-kernel -S
 endef
 TARGET_DEVICES += ACTIONRF1200
+
+define Device/W36AP
+  $(Device/RealtekDTS)
+  BLOCKSIZE := 64k
+  DEVICE_DTS := W36AP
+  DEVICE_TITLE := IP-COM W36AP V1
+  SUPPORTED_DEVICES := w36ap-v1
+  IMAGE_SIZE := 7872k
+  DEV_PROFILE := W36AP
+  CMDLINE := console=ttyS0,115200
+  KERNEL := kernel-bin | append-dtb | lzma | loader-cmdline-compile
+  CVIMG_KERNEL_BURN_ADDR := 0x30000
+  CVIMG_LOADER_START_ADDR := 0x80A00000
+  IMAGES := factory.bin sysupgrade.bin
+  IMAGE/factory.bin = append-kernel | append-fake-rootfs | append-rootfs | cvimg-kernel | cvimg-pad-rootfs
+  IMAGE/sysupgrade.bin = append-kernel | append-fake-rootfs | append-rootfs | cvimg-kernel | pad-rootfs
+endef
+TARGET_DEVICES += W36AP
 endif
 
 ifeq ($(SUBTARGET),rtl8196e)

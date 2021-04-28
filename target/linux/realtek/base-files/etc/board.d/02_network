@@ -43,6 +43,10 @@ case $board in
   re172-v1)
     wan_mac=$(mtd_get_mac_binary boot 24583)
     lan_mac=$(mtd_get_mac_binary boot 24595)
+  ;;
+  w36ap-v1)
+    wan_mac=$(mtd_get_mac_ascii cfg HW_NIC1_ADDR)
+    lan_mac=$(mtd_get_mac_ascii cfg HW_NIC0_ADDR)
 esac
 
 [ -n "$lan_mac" ] && ucidef_set_interface_macaddr "lan" $lan_mac

@@ -1,0 +1,97 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "RTL8197F.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+	compatible = "ip-com,w36ap", "realtek,rtl8197f-soc";
+	model = "IP-COM W36AP v1";
+	
+	aliases {
+		led-boot = &led_status;
+		led-failsafe = &led_status;
+		led-running = &led_status;
+		led-upgrade = &led_status;
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x8000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
+	};
+
+	gpio-keys-polled {
+		compatible = "gpio-keys-polled";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		poll-interval = <20>;
+
+		reset {
+			label = "reset";
+			gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>;
+		};
+	};
+	
+	gpio-leds {
+		compatible = "gpio-leds";
+
+		led_status: sys {
+			label = "w36ap:green:sys";
+			gpios = <&gpio0 56 GPIO_ACTIVE_LOW>;
+		};
+		
+	};
+
+};
+
+
+&gpio0 {
+	status = "okay";
+};
+
+&spi0 {
+	status = "okay";
+
+	m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <29000000>;
+
+		partition@0 {
+			label = "bootloader";
+			reg = <0x0 0x20000>;
+			read-only;
+		};
+		partition@20000 {
+			label = "cfg";
+			reg = <0x20000 0x10000>;
+			read-only;
+		};
+		partition@30000 {
+			label = "firmware";
+			reg = <0x30000 0x7B0000>;
+		};
+		
+		partition@7E0000 {
+			label = "cfm";
+			reg = <0x7E0000 0x10000>;
+			read-only;
+		};
+		
+		partition@7F0000 {
+			label = "cfm-backup";
+			reg = <0x7F0000 0x10000>;
+			read-only;
+		};
+	};
+};
+
