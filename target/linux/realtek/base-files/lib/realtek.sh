@@ -40,6 +40,9 @@ realtek_board_detect() {
 	*"IP-COM W36AP v1")
 		name="w36ap-v1"
 		;;
+	*"HUMAX E3")
+		name="humax-e3"
+		;;
 	esac
 
 	# use generic board detect if no name is set

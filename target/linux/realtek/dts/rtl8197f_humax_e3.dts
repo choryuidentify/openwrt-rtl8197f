@@ -1,0 +1,121 @@
+// SPDX-License-Identifier: GPL-2.0
+/dts-v1/;
+
+#include "RTL8197F.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/input/input.h>
+
+/ {
+	compatible = "humax,e3", "realtek,rtl8197f-soc";
+	model = "HUMAX E3";
+	
+	aliases {
+		led-boot = &led_status;
+		led-failsafe = &led_status;
+		led-running = &led_status;
+		led-upgrade = &led_status;
+	};
+
+	memory {
+		device_type = "memory";
+		reg = <0x0 0x8000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttyS0,115200";
+	};
+
+	gpio-keys-polled {
+		compatible = "gpio-keys-polled";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		poll-interval = <20>;
+
+		reset {
+			label = "reset";
+			gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
+			linux,code = <KEY_RESTART>;
+		};
+	};
+	
+	gpio-leds {
+		compatible = "gpio-leds";
+
+		led_status: sys {
+			label = "humaxe3:green:sys";
+			gpios = <&gpio0 56 GPIO_ACTIVE_LOW>;
+		};
+		
+	};
+
+};
+
+
+&gpio0 {
+	status = "okay";
+};
+
+&spi0 {
+	status = "okay";
+
+	m25p80@0 {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <41000000>;
+
+		partition@0 {
+			label = "bootloader";
+			reg = <0x0 0x6000>;
+			read-only;
+		};
+		partition@6000 {
+			label = "unknown";
+			reg = <0x6000 0xA000>;
+			read-only;
+		};
+
+		partition@10000 {
+			label = "empty";
+			reg = <0x10000 0x10000>;
+			read-only;
+		};
+
+		partition@20000 {
+			label = "unknown2";
+			reg = <0x20000 0xA000>;
+			read-only;
+		};
+
+		partition@2A000 {
+			label = "compcs";
+			reg = <0x2A000 0x6000>;
+			read-only;
+		};
+		
+		partition@30000 {
+			label = "factory";
+			reg = <0x30000 0x10000>;
+		};
+		
+		partition@40000 {
+			label = "firmware";
+			reg = <0x40000 0xF30000>;
+		};
+
+		partition@F70000 {
+			label = "unknown3";
+			reg = <0xF70000 0x80000>;
+			read-only;
+		};
+
+		partition@FF0000 {
+			label = "unknown4";
+			reg = <0xFF0000 0x10000>;
+			read-only;
+		};
+	};
+};
+

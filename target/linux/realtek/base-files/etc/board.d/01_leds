@@ -7,6 +7,9 @@ board_config_update
 board=$(cat /tmp/sysinfo/board_name)
 
 case $board in
+  humax-e3)
+    ucidef_set_led_default "sys" "sys" "humaxe3:green:sys" "1"
+    ;;
   w36ap-v1)
     ucidef_set_led_default "sys" "sys" "w36ap:green:sys" "1"
     ;;

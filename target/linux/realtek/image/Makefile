@@ -254,6 +254,25 @@ define Device/W36AP
   IMAGE/sysupgrade.bin = append-kernel | append-fake-rootfs | append-rootfs | cvimg-kernel | pad-rootfs
 endef
 TARGET_DEVICES += W36AP
+
+define Device/humax_e3
+  $(Device/RealtekDTS)
+  BLOCKSIZE := 64k
+  DEVICE_DTS := rtl8197f_humax_e3
+  DEVICE_TITLE := HUMAX E3
+  SUPPORTED_DEVICES := humax-e3
+  IMAGE_SIZE := 126464k
+  DEV_PROFILE := humax_e3
+  CMDLINE := console=ttyS0,115200
+  KERNEL := kernel-bin | append-dtb | lzma | loader-cmdline-compile
+  CVIMG_KERNEL_BURN_ADDR := 0x40000
+  CVIMG_LOADER_START_ADDR := 0x80A00000
+  IMAGES := factory.bin sysupgrade.bin
+  IMAGE/factory.bin = append-kernel | append-fake-rootfs | append-rootfs | cvimg-kernel | cvimg-pad-rootfs
+  IMAGE/sysupgrade.bin = append-kernel | append-fake-rootfs | append-rootfs | cvimg-kernel | pad-rootfs
+endef
+TARGET_DEVICES += humax_e3
+
 endif
 
 ifeq ($(SUBTARGET),rtl8196e)
